@@ -16,7 +16,29 @@ export type DieType =
 
 export type DieFormat = 'svg' | 'png';
 
-export type DieTheme = 'light' | 'dark';
+export type DieTheme =
+  | 'white-arabic'
+  | 'white-aurebesh'
+  | 'black-arabic'
+  | 'black-aurebesh'
+  | 'anh-arabic'
+  | 'anh-aurebesh'
+  | 'aotc-arabic'
+  | 'aotc-aurebesh'
+  | 'rotj-arabic'
+  | 'rotj-aurebesh'
+  | 'rots-arabic'
+  | 'rots-aurebesh'
+  | 'tesb-arabic'
+  | 'tesb-aurebesh'
+  | 'tfa-arabic'
+  | 'tfa-aurebesh'
+  | 'tlj-arabic'
+  | 'tlj-aurebesh'
+  | 'tpm-arabic'
+  | 'tpm-aurebesh'
+  | 'tros-arabic'
+  | 'tros-aurebesh';
 
 export type D4Variant = 'standard' | 'apex' | 'base';
 
@@ -25,7 +47,7 @@ export interface DieProps {
   type: DieType;
   /** The format of the die asset to display */
   format?: DieFormat;
-  /** The color theme of the die */
+  /** The color theme and numeral system of the die */
   theme?: DieTheme;
   /** The variant of the d4 die (only applicable when type is 'd4') */
   variant?: D4Variant;

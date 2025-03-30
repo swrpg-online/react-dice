@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { DieProps, D4Variant } from './types';
 
-const DEFAULT_THEME = 'light';
+const DEFAULT_THEME = 'white-arabic';
 const DEFAULT_FORMAT = 'svg';
 const DEFAULT_D4_VARIANT = 'standard';
 
