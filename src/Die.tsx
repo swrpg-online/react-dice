@@ -110,87 +110,61 @@ export const Die: React.FC<DieProps> = ({
   const [loadingState, setLoadingState] = React.useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   /** Stores any error message during loading */
   const [error, setError] = React.useState<string | null>(null);
-  /** Used to track the most recent request to prevent race conditions */
-  const requestIdRef = React.useRef<number>(0);
 
-  /**
-   * Effect hook to handle loading and managing die assets.
-   * Implements:
-   * - Asset loading and caching
-   * - Race condition prevention
-   * - Error handling
-   * - Cleanup on unmount
-   */
   React.useEffect(() => {
     const abortController = new AbortController();
-    const currentRequestId = ++requestIdRef.current;
+    let isMounted = true;
 
-    /**
-     * Generates the asset path based on die type and configuration.
-     * Validates die types and throws errors for invalid configurations.
-     * 
-     * @throws {Error} If the die type is invalid
-     * @returns The path to the die asset
-     */
-    const getAssetPath = () => {
-      // Validate die type
-      const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
-      if (!isNumericDie && !type.startsWith('narrative-')) {
-        throw new Error(`Invalid die type: ${type}. Must be one of ${VALID_NUMERIC_DICE.join(', ')} or start with 'narrative-'`);
-      }
-
-      const diceType = isNumericDie ? 'numeric' : 'narrative';
-      
-      if (type === 'd4') {
-        const d4Config = getD4Config(variant);
-        return `dice/${diceType}/${d4Config}-${theme}.${format}`;
-      }
-      
-      return `dice/${diceType}/${type}-${theme}.${format}`;
-    };
-
-    /**
-     * Asynchronously loads the die asset.
-     * Handles both SVG and image formats with proper error handling.
-     */
     const loadAsset = async () => {
       try {
         setLoadingState('loading');
         setError(null);
 
-        const assetPath = getAssetPath();
-        const module = await import(`@swrpg-online/art/${assetPath}`);
-
-        // Check if this is still the most recent request
-        if (currentRequestId !== requestIdRef.current) {
-          return;
+        // Validate die type
+        const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
+        if (!isNumericDie && !type.startsWith('narrative-')) {
+          throw new Error(`Invalid die type: ${type}. Must be one of ${VALID_NUMERIC_DICE.join(', ')} or start with 'narrative-'`);
         }
 
-        if (format === 'svg') {
-          const response = await fetch(module.default, { signal: abortController.signal });
+        const diceType = isNumericDie ? 'numeric' : 'narrative';
+        let assetPath: string;
+        
+        if (type === 'd4') {
+          const d4Config = getD4Config(variant);
+          assetPath = `${diceType}/${d4Config}-${theme}.${format}`;
+        } else {
+          assetPath = `${diceType}/${type}-${theme}.${format}`;
+        }
+
+        // Use webpack's raw-loader to load the asset
+        const assetModule = await import(
+          /* webpackMode: "eager" */
+          `!raw-loader!@swrpg-online/art/dice/${assetPath}`
+        );
+        const assetUrl = assetModule.default;
+
+        if (format === 'svg' && isMounted) {
+          const response = await fetch(assetUrl, { signal: abortController.signal });
           if (!response.ok) {
             throw new Error(`Failed to fetch SVG: ${response.statusText}`);
           }
           const text = await response.text();
           
-          // Check again if this is still the most recent request
-          if (currentRequestId !== requestIdRef.current) {
-            return;
+          if (isMounted) {
+            // Process SVG attributes
+            const classAttr = className ? ` class="${className}"` : '';
+            const styleAttr = style ? ` style="${processStyle(style)}"` : '';
+            const processedSvg = text.replace('<svg', `<svg${classAttr}${styleAttr}`);
+            
+            setSvgContent(processedSvg);
+            setLoadingState('success');
           }
-
-          // Process SVG attributes
-          const classAttr = className ? ` class="${className}"` : '';
-          const styleAttr = style ? ` style="${processStyle(style)}"` : '';
-          const processedSvg = text.replace('<svg', `<svg${classAttr}${styleAttr}`);
-          
-          setSvgContent(processedSvg);
-          setLoadingState('success');
-        } else {
-          setSvgContent(module.default);
+        } else if (isMounted) {
+          setSvgContent(assetUrl);
           setLoadingState('success');
         }
       } catch (error) {
-        if (!abortController.signal.aborted && currentRequestId === requestIdRef.current) {
+        if (isMounted && !abortController.signal.aborted) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           console.error(`Failed to load die ${format}:`, errorMessage);
           setError(errorMessage);
@@ -202,8 +176,8 @@ export const Die: React.FC<DieProps> = ({
 
     loadAsset();
 
-    // Cleanup function to abort any in-flight requests
     return () => {
+      isMounted = false;
       abortController.abort();
     };
   }, [type, format, theme, variant, className, style]);
