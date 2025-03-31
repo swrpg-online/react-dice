@@ -131,16 +131,13 @@ export const Die: React.FC<DieProps> = ({
         
         if (type === 'd4') {
           const d4Config = getD4Config(variant);
-          assetPath = `${diceType}/${d4Config}-${theme}.${format}`;
+          assetPath = `@swrpg-online/art/dice/${diceType}/${d4Config}-${theme}.${format}`;
         } else {
-          assetPath = `${diceType}/${type}-${theme}.${format}`;
+          assetPath = `@swrpg-online/art/dice/${diceType}/${type}-${theme}.${format}`;
         }
 
-        // Import the asset using the package's exports pattern
-        const assetModule = await import(
-          /* webpackMode: "eager" */
-          `@swrpg-online/art/dice/${assetPath}`
-        );
+        // Import the asset
+        const assetModule = await import(assetPath);
         const assetUrl = assetModule.default;
 
         if (format === 'svg' && isMounted) {

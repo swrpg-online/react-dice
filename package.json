@@ -1,6 +1,6 @@
 {
   "name": "@swrpg-online/react-dice",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "React components for displaying Star Wars RPG narrative and numeric dice assets",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -52,6 +52,6 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
-    "@swrpg-online/art": "^0.2.0"
+    "@swrpg-online/art": "^0.2.1"
   }
 }
