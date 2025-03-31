@@ -21,13 +21,18 @@ export default {
     },
   ],
   plugins: [
-    url({
-      include: ['**/*.svg', '**/*.png'],
-      limit: 0, // Always generate files
-    }),
     resolve({
       // This allows us to resolve packages from node_modules
       moduleDirectories: ['node_modules'],
+      // Allow resolving SVG files from node_modules
+      extensions: ['.js', '.ts', '.tsx', '.svg'],
+    }),
+    url({
+      include: ['**/*.svg', '**/*.png'],
+      limit: 0, // Always generate files
+      publicPath: '',
+      destDir: 'dist/assets',
+      fileName: '[name][extname]',
     }),
     commonjs(),
     typescript({
