@@ -27,11 +27,11 @@ type NumericDieType = typeof VALID_NUMERIC_DICE[number];
 const getD4Config = (variant: D4Variant): string => {
   switch (variant) {
     case 'apex':
-      return 'D4Apex-01-Arabic';
+      return 'D4Apex-01';
     case 'base':
-      return 'D4Base-01-Arabic';
+      return 'D4Base-01';
     default:
-      return 'D4-01-Arabic';
+      return 'D4-01';
   }
 };
 
@@ -95,9 +95,12 @@ export const Die: React.FC<DieProps> = ({
         
         if (type === 'd4') {
           const d4Config = getD4Config(variant);
-          assetPath = `@swrpg-online/art/dice/${diceType}/${d4Config}-${theme}.${format}`;
+          // Update path to include theme subdirectory and remove theme from filename
+          assetPath = `@swrpg-online/art/dice/${diceType}/${theme}/${d4Config}.${format}`;
         } else {
-          assetPath = `@swrpg-online/art/dice/${diceType}/${type}-${theme}.${format}`;
+          // Update path to include theme subdirectory and simplify filename
+          const baseName = type.replace('d', 'D');
+          assetPath = `@swrpg-online/art/dice/${diceType}/${theme}/${baseName}.${format}`;
         }
 
         // Import the SVG component
