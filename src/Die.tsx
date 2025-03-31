@@ -136,10 +136,10 @@ export const Die: React.FC<DieProps> = ({
           assetPath = `${diceType}/${type}-${theme}.${format}`;
         }
 
-        // Use webpack's raw-loader to load the asset
+        // Import the asset using the package's exports pattern
         const assetModule = await import(
           /* webpackMode: "eager" */
-          `!raw-loader!@swrpg-online/art/dice/${assetPath}`
+          `@swrpg-online/art/dice/${assetPath}`
         );
         const assetUrl = assetModule.default;
 
