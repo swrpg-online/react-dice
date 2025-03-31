@@ -1,11 +1,12 @@
-const typescript = require('@rollup/plugin-typescript');
-const commonjs = require('@rollup/plugin-commonjs');
-const resolve = require('@rollup/plugin-node-resolve');
-const { readFileSync } = require('fs');
+import typescript from '@rollup/plugin-typescript';
+import commonjs from '@rollup/plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
+import url from '@rollup/plugin-url';
+import { readFileSync } from 'fs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
-module.exports = {
+export default {
   input: 'src/index.ts',
   output: [
     {
@@ -20,12 +21,19 @@ module.exports = {
     },
   ],
   plugins: [
-    resolve(),
+    url({
+      include: ['**/*.svg', '**/*.png'],
+      limit: 0, // Always generate files
+    }),
+    resolve({
+      // This allows us to resolve packages from node_modules
+      moduleDirectories: ['node_modules'],
+    }),
     commonjs(),
     typescript({
       tsconfig: './tsconfig.json',
       exclude: ['**/*.test.ts', '**/*.test.tsx'],
     }),
   ],
-  external: ['react', 'react-dom', '@swrpg-online/art'],
+  external: ['react', 'react-dom'], // Remove @swrpg-online/art from externals
 }; 
