@@ -143,10 +143,10 @@ export const Die: React.FC<DieProps> = ({
       
       if (type === 'd4') {
         const d4Config = getD4Config(variant);
-        return `/dice/${diceType}/${d4Config}-${theme}.${format}`;
+        return `dice/${diceType}/${d4Config}-${theme}.${format}`;
       }
       
-      return `/dice/${diceType}/${type}-${theme}.${format}`;
+      return `dice/${diceType}/${type}-${theme}.${format}`;
     };
 
     /**
@@ -159,7 +159,7 @@ export const Die: React.FC<DieProps> = ({
         setError(null);
 
         const assetPath = getAssetPath();
-        const module = await import(`@swrpg-online/art${assetPath}`);
+        const module = await import(`@swrpg-online/art/${assetPath}`);
 
         // Check if this is still the most recent request
         if (currentRequestId !== requestIdRef.current) {
