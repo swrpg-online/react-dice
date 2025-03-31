@@ -45,7 +45,7 @@ export const Die: React.FC<DieProps> = ({
   const [svgContent, setSvgContent] = React.useState<string>('');
 
   React.useEffect(() => {
-    let isMounted = true;
+    const abortController = new AbortController();
 
     const getAssetPath = () => {
       const diceType = ['d4', 'd6', 'd8', 'd12', 'd20', 'd100'].includes(type) ? 'numeric' : 'narrative';
@@ -58,15 +58,14 @@ export const Die: React.FC<DieProps> = ({
       return `/dice/${diceType}/${type}-${theme}.${format}`;
     };
 
-    const assetPath = getAssetPath();
-    
-    if (format === 'svg') {
-      import(`@swrpg-online/art${assetPath}`)
-        .then(async (module) => {
-          if (!isMounted) return;
-          const response = await fetch(module.default);
+    const loadAsset = async () => {
+      try {
+        const assetPath = getAssetPath();
+        const module = await import(`@swrpg-online/art${assetPath}`);
+
+        if (format === 'svg') {
+          const response = await fetch(module.default, { signal: abortController.signal });
           const text = await response.text();
-          if (!isMounted) return;
           
           // Process SVG attributes
           const classAttr = className ? ` class="${className}"` : '';
@@ -74,27 +73,21 @@ export const Die: React.FC<DieProps> = ({
           const processedSvg = text.replace('<svg', `<svg${classAttr}${styleAttr}`);
           
           setSvgContent(processedSvg);
-        })
-        .catch((error) => {
-          if (!isMounted) return;
-          console.error('Failed to load die SVG:', error);
-          setSvgContent('');
-        });
-    } else {
-      import(`@swrpg-online/art${assetPath}`)
-        .then((module) => {
-          if (!isMounted) return;
+        } else {
           setSvgContent(module.default);
-        })
-        .catch((error) => {
-          if (!isMounted) return;
-          console.error('Failed to load die image:', error);
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted) {
+          console.error(`Failed to load die ${format}:`, error);
           setSvgContent('');
-        });
-    }
+        }
+      }
+    };
+
+    loadAsset();
 
     return () => {
-      isMounted = false;
+      abortController.abort();
     };
   }, [type, format, theme, variant, className, style]);
 
