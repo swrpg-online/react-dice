@@ -36,41 +36,6 @@ const getD4Config = (variant: D4Variant): string => {
 };
 
 /**
- * Converts a camelCase string to kebab-case.
- * Used for converting React style properties to CSS format.
- * 
- * @param str - The camelCase string to convert
- * @returns The kebab-case version of the string
- * @example
- * toKebabCase('backgroundColor') // returns 'background-color'
- */
-const toKebabCase = (str: string) => str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-
-/**
- * Processes a React style object into a CSS string.
- * Handles unit conversion for numeric values and property name formatting.
- * 
- * @param style - React style object to process
- * @returns A CSS string representation of the style object
- * @example
- * processStyle({ marginTop: 10, backgroundColor: 'red' })
- * // returns 'margin-top:10px;background-color:red'
- */
-const processStyle = (style: React.CSSProperties): string => {
-  if (!style) return '';
-  return Object.entries(style)
-    .map(([key, value]) => {
-      const kebabKey = toKebabCase(key);
-      // Handle numeric values that need units
-      if (typeof value === 'number' && !['opacity', 'zIndex'].includes(key)) {
-        return `${kebabKey}:${value}px`;
-      }
-      return `${kebabKey}:${value}`;
-    })
-    .join(';');
-};
-
-/**
  * A React component that renders dice for tabletop gaming applications.
  * Supports both numeric (d4, d6, etc.) and narrative dice types with various themes and formats.
  * 
@@ -104,15 +69,14 @@ export const Die: React.FC<DieProps> = ({
   className,
   style,
 }) => {
-  /** Stores the loaded SVG/image content */
-  const [svgContent, setSvgContent] = React.useState<string>('');
+  /** Stores the loaded SVG component */
+  const [DiceComponent, setDiceComponent] = React.useState<React.ComponentType<React.SVGProps<SVGSVGElement>> | null>(null);
   /** Tracks the current loading state of the die asset */
   const [loadingState, setLoadingState] = React.useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   /** Stores any error message during loading */
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const abortController = new AbortController();
     let isMounted = true;
 
     const loadAsset = async () => {
@@ -136,37 +100,20 @@ export const Die: React.FC<DieProps> = ({
           assetPath = `@swrpg-online/art/dice/${diceType}/${type}-${theme}.${format}`;
         }
 
-        // Import the asset
-        const assetModule = await import(assetPath);
-        const assetUrl = assetModule.default;
-
-        if (format === 'svg' && isMounted) {
-          const response = await fetch(assetUrl, { signal: abortController.signal });
-          if (!response.ok) {
-            throw new Error(`Failed to fetch SVG: ${response.statusText}`);
-          }
-          const text = await response.text();
-          
-          if (isMounted) {
-            // Process SVG attributes
-            const classAttr = className ? ` class="${className}"` : '';
-            const styleAttr = style ? ` style="${processStyle(style)}"` : '';
-            const processedSvg = text.replace('<svg', `<svg${classAttr}${styleAttr}`);
-            
-            setSvgContent(processedSvg);
-            setLoadingState('success');
-          }
-        } else if (isMounted) {
-          setSvgContent(assetUrl);
+        // Import the SVG component
+        const module = await import(assetPath);
+        
+        if (isMounted) {
+          setDiceComponent(() => module.default);
           setLoadingState('success');
         }
       } catch (error) {
-        if (isMounted && !abortController.signal.aborted) {
+        if (isMounted) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           console.error(`Failed to load die ${format}:`, errorMessage);
           setError(errorMessage);
           setLoadingState('error');
-          setSvgContent('');
+          setDiceComponent(null);
         }
       }
     };
@@ -175,9 +122,8 @@ export const Die: React.FC<DieProps> = ({
 
     return () => {
       isMounted = false;
-      abortController.abort();
     };
-  }, [type, format, theme, variant, className, style]);
+  }, [type, format, theme, variant]);
 
   // Render error state
   if (loadingState === 'error') {
@@ -197,18 +143,10 @@ export const Die: React.FC<DieProps> = ({
     );
   }
 
-  // Render SVG content
-  if (format === 'svg') {
-    return <div dangerouslySetInnerHTML={{ __html: svgContent }} />;
+  // Render the SVG component
+  if (DiceComponent) {
+    return <DiceComponent className={className} style={style} />;
   }
 
-  // Render image content
-  return (
-    <img
-      src={svgContent}
-      alt={`${type} die`}
-      className={className}
-      style={style}
-    />
-  );
+  return null;
 }; 
