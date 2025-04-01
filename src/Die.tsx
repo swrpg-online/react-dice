@@ -150,7 +150,6 @@ export const Die: React.FC<DieProps> = ({
 
         // Determine if this is a numeric or narrative die
         const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
-        const diceType = isNumericDie ? 'numeric' : 'narrative';
 
         // Validate die type and face value
         if (!isNumericDie && !type.startsWith('narrative-')) {
@@ -177,10 +176,10 @@ export const Die: React.FC<DieProps> = ({
           const { style: themeStyle, script: themeScript } = parseTheme(theme);
           if (type === 'd4') {
             const d4Config = getD4Config(variant);
-            assetPath = `@swrpg-online/art/dice/${diceType}/${theme}/${d4Config}-${formatFaceNumber(face)}-${themeScript}-${themeStyle}.${format}`;
+            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face)}-${themeScript}-${themeStyle}.${format}`;
           } else {
             const baseName = type.replace('d', 'D');
-            assetPath = `@swrpg-online/art/dice/${diceType}/${theme}/${baseName}-${formatFaceNumber(face)}-${themeScript}-${themeStyle}.${format}`;
+            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${baseName}-${formatFaceNumber(face)}-${themeScript}-${themeStyle}.${format}`;
           }
         } else {
           // Validate narrative face value
@@ -190,11 +189,11 @@ export const Die: React.FC<DieProps> = ({
 
           // Construct narrative die path
           const dieTypeName = getDieTypeName(type);
-          assetPath = `@swrpg-online/art/dice/${diceType}/${dieTypeName}-${face}.${format}`;
+          assetPath = `@swrpg-online/art/dice/narrative/${dieTypeName}-${face}.${format}`;
         }
 
         // Import the SVG component
-        const module = await import(assetPath);
+        const module = await import(/* @vite-ignore */ assetPath);
         
         if (isMounted) {
           setDiceComponent(() => module.default);
