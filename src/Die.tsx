@@ -176,10 +176,10 @@ export const Die: React.FC<DieProps> = ({
           const { style: themeStyle, script: themeScript } = parseTheme(theme);
           if (type === 'd4') {
             const d4Config = getD4Config(variant);
-            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face)}-${themeScript}-${themeStyle}.${format}`;
+            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face)}-${themeStyle}-${themeScript}.${format}`;
           } else {
             const baseName = type.replace('d', 'D');
-            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${baseName}-${formatFaceNumber(face)}-${themeScript}-${themeStyle}.${format}`;
+            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${baseName}-${formatFaceNumber(face)}-${themeStyle}-${themeScript}.${format}`;
           }
         } else {
           // Validate narrative face value
