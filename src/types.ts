@@ -42,9 +42,32 @@ export type DieTheme =
 
 export type D4Variant = 'standard' | 'apex' | 'base';
 
+/** Possible results on narrative dice */
+export type NarrativeResult =
+  | 'Blank'
+  | 'Success'
+  | 'Failure'
+  | 'Advantage'
+  | 'Threat'
+  | 'Triumph'
+  | 'Despair'
+  | '1x-Solid'
+  | '1x-Hollow'
+  | '2x-Solid'
+  | '2x-Hollow';
+
+/** Face value for narrative dice - can be a single result or two results */
+export type NarrativeFace = NarrativeResult | `${NarrativeResult}-${NarrativeResult}`;
+
 export interface DieProps {
   /** The type of die to display */
   type: DieType;
+  /** 
+   * The face to display:
+   * - For numeric dice: number (1-based, for d100 use 0-90 in steps of 10)
+   * - For narrative dice: result(s) (e.g., 'Success', 'Advantage-Advantage')
+   */
+  face?: number | NarrativeFace;
   /** The format of the die asset to display */
   format?: DieFormat;
   /** The color theme and numeral system of the die */
