@@ -139,10 +139,18 @@ export const Die: React.FC<DieProps> = ({
   const [loadingState, setLoadingState] = React.useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   /** Stores any error message during loading */
   const [error, setError] = React.useState<string | null>(null);
+  /** Flag to track if this component is mounted */
+  const isMountedRef = React.useRef(true);
+
+  // Set up the mounted flag
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   React.useEffect(() => {
-    let isMounted = true;
-
     const loadAsset = async () => {
       try {
         setLoadingState('loading');
@@ -152,12 +160,10 @@ export const Die: React.FC<DieProps> = ({
         const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
 
         // Validate die type and face value
-        if (!isNumericDie && !type.startsWith('narrative-')) {
-          throw new Error(`Invalid die type: ${type}. Must be one of ${VALID_NUMERIC_DICE.join(', ')} or start with 'narrative-'`);
+        if (!isNumericDie && !['boost', 'proficiency', 'ability', 'setback', 'challenge', 'difficulty'].includes(type)) {
+          throw new Error(`Invalid die type: ${type}. Must be one of ${VALID_NUMERIC_DICE.join(', ')} or a valid narrative die type`);
         }
 
-        let assetPath: string;
-        
         if (isNumericDie) {
           // Validate numeric face value
           if (typeof face !== 'number') {
@@ -171,36 +177,49 @@ export const Die: React.FC<DieProps> = ({
           } else if (face < 1 || face > maxFace) {
             throw new Error(`Invalid face for ${type}: ${face}. Must be between 1 and ${maxFace}.`);
           }
-
-          // Construct numeric die path
-          const { style: themeStyle, script: themeScript } = parseTheme(theme);
-          if (type === 'd4') {
-            const d4Config = getD4Config(variant);
-            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face)}-${themeStyle}-${themeScript}.${format}`;
-          } else {
-            const baseName = type.replace('d', 'D');
-            assetPath = `@swrpg-online/art/dice/numeric/${theme}/${baseName}-${formatFaceNumber(face)}-${themeStyle}-${themeScript}.${format}`;
-          }
         } else {
           // Validate narrative face value
           if (typeof face !== 'string') {
             throw new Error(`Narrative dice require a string for the face value, got: ${face}`);
           }
-
-          // Construct narrative die path
-          const dieTypeName = getDieTypeName(type);
-          assetPath = `@swrpg-online/art/dice/narrative/${dieTypeName}-${face}.${format}`;
         }
 
-        // Import the SVG component
-        const module = await import(/* @vite-ignore */ assetPath);
-        
-        if (isMounted) {
-          setDiceComponent(() => module.default);
-          setLoadingState('success');
+        // Use explicit import paths based on die type
+        let importPath;
+        let importPathString = '';
+        if (isNumericDie) {
+          const numericType = type as NumericDieType;
+          const { style: themeStyle, script: themeScript } = parseTheme(theme);
+          if (numericType === 'd4') {
+            const d4Config = getD4Config(variant);
+            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face as number)}-${themeStyle}-${themeScript}.${format}`;
+          } else {
+            const dieType = getDieTypeName(numericType);
+            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${dieType}-${formatFaceNumber(face as number)}-${themeStyle}-${themeScript}.${format}`;
+          }
+        } else {
+          const dieTypeName = getDieTypeName(type);
+          importPathString = `@swrpg-online/art/dice/narrative/${dieTypeName}/${dieTypeName}-${face}.${format}`;
+        }
+
+        try {
+          // Add vite-ignore to prevent warnings and support multiple bundlers
+          importPath = () => import(/* @vite-ignore */ importPathString);
+          const module = await importPath();
+          
+          if (isMountedRef.current) {
+            if (!module.default) {
+              throw new Error(`Module loaded but no default export found for ${importPathString}`);
+            }
+            setDiceComponent(() => module.default);
+            setLoadingState('success');
+          }
+        } catch (importError) {
+          console.error(`Failed to load die asset: ${importPathString}`, importError);
+          throw new Error(`Failed to load die asset: ${importPathString}. ${importError instanceof Error ? importError.message : 'Unknown import error'}`);
         }
       } catch (error) {
-        if (isMounted) {
+        if (isMountedRef.current) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           console.error(`Failed to load die ${format}:`, errorMessage);
           setError(errorMessage);
@@ -211,17 +230,32 @@ export const Die: React.FC<DieProps> = ({
     };
 
     loadAsset();
-
-    return () => {
-      isMounted = false;
-    };
   }, [type, face, format, theme, variant]);
 
   // Render error state
   if (loadingState === 'error') {
     return (
-      <div className={className} style={style} role="alert">
-        Error loading die: {error}
+      <div 
+        className={`die-error ${className || ''}`} 
+        style={{
+          width: '50px',
+          height: '50px',
+          backgroundColor: '#f8d7da',
+          border: '1px solid #f5c6cb',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#721c24',
+          fontSize: '12px',
+          padding: '4px',
+          textAlign: 'center',
+          ...style
+        }} 
+        role="alert"
+        title={error || 'Error loading die'}
+      >
+        !
       </div>
     );
   }
@@ -229,8 +263,23 @@ export const Die: React.FC<DieProps> = ({
   // Render loading state
   if (loadingState === 'loading' || loadingState === 'idle') {
     return (
-      <div className={className} style={style} role="status">
-        <span>Loading {type} die...</span>
+      <div 
+        className={`die-loading ${className || ''}`} 
+        style={{
+          width: '50px',
+          height: '50px',
+          backgroundColor: '#e9ecef',
+          border: '1px solid #dee2e6',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#495057',
+          ...style
+        }} 
+        role="status"
+      >
+        <span>...</span>
       </div>
     );
   }
