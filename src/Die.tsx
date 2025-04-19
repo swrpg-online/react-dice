@@ -114,9 +114,8 @@ const constructImagePath = (
   const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
   const { style: themeStyle, script: themeScript } = parseTheme(theme);
   
-  // Use a relative path without leading slash for better compatibility
-  // This assumes the @swrpg-online/art package is properly installed and accessible
-  const basePath = './node_modules/@swrpg-online/art/dice';
+  // Import from @swrpg-online/art package
+  const basePath = '@swrpg-online/art/dice';
   
   if (isNumericDie) {
     const faceStr = formatFaceNumber(face as number);
@@ -180,36 +179,34 @@ export const Die: React.FC<DieProps> = ({
       // Validate die type
       const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
       if (!isNumericDie && !['boost', 'proficiency', 'ability', 'setback', 'challenge', 'difficulty'].includes(type)) {
-        throw new Error(`Invalid die type: ${type}. Must be one of ${VALID_NUMERIC_DICE.join(', ')} or a valid narrative die type`);
+        throw new Error(`Invalid die type: ${type}`);
       }
       
       // Validate face value
       if (isNumericDie) {
         if (typeof face !== 'number') {
-          throw new Error(`Numeric dice require a number for the face value, got: ${face}`);
+          throw new Error(`Numeric dice require a number for the face value`);
         }
         
         const maxFace = getMaxFace(type as NumericDieType);
         if (type === 'd100') {
           if (face < 0 || face > maxFace || face % 10 !== 0) {
-            throw new Error(`Invalid face for d100: ${face}. Must be between 0 and 90 in steps of 10.`);
+            throw new Error(`Invalid face for d100: Must be between 0 and 90 in steps of 10`);
           }
         } else if (face < 1 || face > maxFace) {
-          throw new Error(`Invalid face for ${type}: ${face}. Must be between 1 and ${maxFace}.`);
+          throw new Error(`Invalid face for ${type}: Must be between 1 and ${maxFace}`);
         }
       } else {
         if (typeof face !== 'string') {
-          throw new Error(`Narrative dice require a string for the face value, got: ${face}`);
+          throw new Error(`Narrative dice require a string for the face value`);
         }
       }
       
       // All validation passed, construct the image path
       const imagePath = constructImagePath(type, face, theme, format, variant);
-      console.log(`Attempting to load die: ${type}, face: ${face}, path: ${imagePath}`);
       setImgSrc(imagePath);
     } catch (validationError) {
       const errorMessage = validationError instanceof Error ? validationError.message : 'Unknown error';
-      console.error(`Die validation error:`, errorMessage);
       setError(errorMessage);
       setLoadingState('error');
     }
@@ -225,21 +222,11 @@ export const Die: React.FC<DieProps> = ({
     // If SVG fails, try PNG
     if (format === 'svg' && imgSrc) {
       const pngPath = imgSrc.replace(`.${format}`, '.png');
-      console.log(`SVG failed to load, trying PNG: ${pngPath}`);
       setImgSrc(pngPath);
       return;
     }
     
-    // If the original path started with './node_modules' and failed, try without it
-    if (imgSrc && imgSrc.startsWith('./node_modules/')) {
-      const alternativePath = imgSrc.replace('./node_modules/', '');
-      console.log(`Path with node_modules failed, trying: ${alternativePath}`);
-      setImgSrc(alternativePath);
-      return;
-    }
-    
-    // If all attempts failed, show error state
-    setError(`Failed to load die image for ${type}`);
+    setError(`Failed to load die image`);
     setLoadingState('error');
   };
 
@@ -262,7 +249,7 @@ export const Die: React.FC<DieProps> = ({
         }} 
         role="status"
       >
-        <span>...</span>
+        Loading...
       </div>
     );
   }
