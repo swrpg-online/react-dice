@@ -25,7 +25,11 @@ export default {
       // This allows us to resolve packages from node_modules
       moduleDirectories: ['node_modules'],
       // Allow resolving SVG files from node_modules
-      extensions: ['.js', '.ts', '.tsx', '.svg'],
+      extensions: ['.js', '.ts', '.tsx', '.svg', '.png'],
+      // Make sure we can resolve the @swrpg-online/art package
+      resolveOnly: [
+        /^(?!@swrpg-online\/art)/  // Process all imports EXCEPT @swrpg-online/art
+      ]
     }),
     url({
       include: ['**/*.svg', '**/*.png'],

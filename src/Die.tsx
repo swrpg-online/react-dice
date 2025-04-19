@@ -223,29 +223,44 @@ export const Die: React.FC<DieProps> = ({
         } catch (importError) {
           console.error(`Failed to load die asset: ${importPathString}`, importError);
           
-          // Try alternative format as fallback (if svg fails, try png or vice versa)
-          if (format === 'svg' || format === 'png') {
-            const altFormat = format === 'svg' ? 'png' : 'svg';
-            const altPathString = importPathString.replace(`.${format}`, `.${altFormat}`);
-            
+          // Try alternative paths with different formats
+          const alternativePaths = [
+            // Try without the @swrpg-online prefix
+            importPathString.replace('@swrpg-online/art/', 'art/'),
+            // Try with /node_modules/ prefix
+            `/node_modules/${importPathString}`,
+            // Try with relative path
+            `./${importPathString}`,
+            // Try PNG if original was SVG
+            format === 'svg' ? importPathString.replace('.svg', '.png') : null,
+          ].filter(Boolean) as string[];
+          
+          // Try each alternative path
+          let loaded = false;
+          for (const altPath of alternativePaths) {
+            if (loaded) break;
             try {
-              console.log(`Attempting to load alternative format: ${altPathString}`);
-              const altModule = await import(/* @vite-ignore */ altPathString);
+              console.log(`Attempting alternative path: ${altPath}`);
+              const altModule = await import(/* @vite-ignore */ altPath);
               
               if (isMountedRef.current) {
                 if (!altModule.default) {
-                  throw new Error(`Module loaded but no default export found for ${altPathString}`);
+                  console.warn(`Module loaded but no default export found for ${altPath}`);
+                  continue;
                 }
                 setDiceComponent(() => altModule.default);
                 setLoadingState('success');
-                return; // Exit if successful
+                loaded = true;
+                console.log(`Successfully loaded die using path: ${altPath}`);
               }
             } catch (altError) {
-              console.error(`Alternative format also failed to load: ${altPathString}`, altError);
+              console.warn(`Failed to load alternative path: ${altPath}`, altError);
             }
           }
           
-          throw new Error(`Failed to load die asset: ${importPathString}. ${importError instanceof Error ? importError.message : 'Unknown import error'}`);
+          if (!loaded) {
+            throw new Error(`Failed to load die asset: ${importPathString}. ${importError instanceof Error ? importError.message : 'Unknown import error'}`);
+          }
         }
       } catch (error) {
         if (isMountedRef.current) {
