@@ -114,8 +114,9 @@ const constructImagePath = (
   const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
   const { style: themeStyle, script: themeScript } = parseTheme(theme);
   
-  // For consumption in other projects, use paths relative to node_modules
-  const basePath = '/node_modules/@swrpg-online/art/dice';
+  // Use a relative path without leading slash for better compatibility
+  // This assumes the @swrpg-online/art package is properly installed and accessible
+  const basePath = './node_modules/@swrpg-online/art/dice';
   
   if (isNumericDie) {
     const faceStr = formatFaceNumber(face as number);
@@ -229,7 +230,15 @@ export const Die: React.FC<DieProps> = ({
       return;
     }
     
-    // If already tried PNG or not SVG, mark as error
+    // If the original path started with './node_modules' and failed, try without it
+    if (imgSrc && imgSrc.startsWith('./node_modules/')) {
+      const alternativePath = imgSrc.replace('./node_modules/', '');
+      console.log(`Path with node_modules failed, trying: ${alternativePath}`);
+      setImgSrc(alternativePath);
+      return;
+    }
+    
+    // If all attempts failed, show error state
     setError(`Failed to load die image for ${type}`);
     setLoadingState('error');
   };
