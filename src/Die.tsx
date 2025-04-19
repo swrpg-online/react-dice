@@ -67,6 +67,9 @@ const getD4Config = (variant: D4Variant): string => {
 /**
  * Extracts theme components from the theme string.
  * For example, 'white-arabic' becomes { style: 'White', script: 'Arabic' }
+ * 
+ * Note: The actual filenames use script-style order (e.g., 'Arabic-White') 
+ * rather than style-script order, which is handled when constructing the import path.
  */
 const parseTheme = (theme: string): { style: string; script: string } => {
   const [style, script] = theme.split('-');
@@ -192,15 +195,18 @@ export const Die: React.FC<DieProps> = ({
           const { style: themeStyle, script: themeScript } = parseTheme(theme);
           if (numericType === 'd4') {
             const d4Config = getD4Config(variant);
-            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face as number)}-${themeStyle}-${themeScript}.${format}`;
+            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face as number)}-${themeScript}-${themeStyle}.${format}`;
           } else {
             const dieType = getDieTypeName(numericType);
-            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${dieType}-${formatFaceNumber(face as number)}-${themeStyle}-${themeScript}.${format}`;
+            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${dieType}-${formatFaceNumber(face as number)}-${themeScript}-${themeStyle}.${format}`;
           }
         } else {
           const dieTypeName = getDieTypeName(type);
           importPathString = `@swrpg-online/art/dice/narrative/${dieTypeName}/${dieTypeName}-${face}.${format}`;
         }
+
+        // Log the path for debugging
+        console.log(`Attempting to load die: ${type}, face: ${face}, path: ${importPathString}`);
 
         try {
           // Add vite-ignore to prevent warnings and support multiple bundlers
@@ -216,6 +222,29 @@ export const Die: React.FC<DieProps> = ({
           }
         } catch (importError) {
           console.error(`Failed to load die asset: ${importPathString}`, importError);
+          
+          // Try alternative format as fallback (if svg fails, try png or vice versa)
+          if (format === 'svg' || format === 'png') {
+            const altFormat = format === 'svg' ? 'png' : 'svg';
+            const altPathString = importPathString.replace(`.${format}`, `.${altFormat}`);
+            
+            try {
+              console.log(`Attempting to load alternative format: ${altPathString}`);
+              const altModule = await import(/* @vite-ignore */ altPathString);
+              
+              if (isMountedRef.current) {
+                if (!altModule.default) {
+                  throw new Error(`Module loaded but no default export found for ${altPathString}`);
+                }
+                setDiceComponent(() => altModule.default);
+                setLoadingState('success');
+                return; // Exit if successful
+              }
+            } catch (altError) {
+              console.error(`Alternative format also failed to load: ${altPathString}`, altError);
+            }
+          }
+          
           throw new Error(`Failed to load die asset: ${importPathString}. ${importError instanceof Error ? importError.message : 'Unknown import error'}`);
         }
       } catch (error) {
