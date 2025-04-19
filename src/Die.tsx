@@ -102,6 +102,37 @@ const getDieTypeName = (type: string): string => {
 };
 
 /**
+ * Constructs the image path for a die based on its properties
+ */
+const constructImagePath = (
+  type: string,
+  face: number | string,
+  theme: string,
+  format: string,
+  variant: D4Variant
+): string => {
+  const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
+  const { style: themeStyle, script: themeScript } = parseTheme(theme);
+  
+  // For consumption in other projects, use paths relative to node_modules
+  const basePath = '/node_modules/@swrpg-online/art/dice';
+  
+  if (isNumericDie) {
+    const faceStr = formatFaceNumber(face as number);
+    if (type === 'd4') {
+      const d4Config = getD4Config(variant);
+      return `${basePath}/numeric/${theme}/${d4Config}-${faceStr}-${themeScript}-${themeStyle}.${format}`;
+    } else {
+      const dieType = getDieTypeName(type);
+      return `${basePath}/numeric/${theme}/${dieType}-${faceStr}-${themeScript}-${themeStyle}.${format}`;
+    }
+  } else {
+    const dieTypeName = getDieTypeName(type);
+    return `${basePath}/narrative/${dieTypeName}/${dieTypeName}-${face}.${format}`;
+  }
+};
+
+/**
  * A React component that renders dice for tabletop gaming applications.
  * Supports both numeric (d4, d6, etc.) and narrative dice types with various themes and formats.
  * 
@@ -109,9 +140,7 @@ const getDieTypeName = (type: string): string => {
  * - Supports SVG and image formats
  * - Handles multiple D4 variants
  * - Provides loading and error states
- * - Prevents race conditions in async loading
  * - Supports custom styling and theming
- * - Implements proper cleanup on unmount
  * 
  * @component
  * @example
@@ -136,145 +165,98 @@ export const Die: React.FC<DieProps> = ({
   className,
   style,
 }) => {
-  /** Stores the loaded SVG component */
-  const [DiceComponent, setDiceComponent] = React.useState<React.ComponentType<React.SVGProps<SVGSVGElement>> | null>(null);
-  /** Tracks the current loading state of the die asset */
-  const [loadingState, setLoadingState] = React.useState<'idle' | 'loading' | 'error' | 'success'>('idle');
-  /** Stores any error message during loading */
+  // State to track loading and error states
+  const [loadingState, setLoadingState] = React.useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = React.useState<string | null>(null);
-  /** Flag to track if this component is mounted */
-  const isMountedRef = React.useRef(true);
-
-  // Set up the mounted flag
+  const [imgSrc, setImgSrc] = React.useState<string | null>(null);
+  
+  // On mount and when props change, validate and set the image path
   React.useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  React.useEffect(() => {
-    const loadAsset = async () => {
-      try {
-        setLoadingState('loading');
-        setError(null);
-
-        // Determine if this is a numeric or narrative die
-        const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
-
-        // Validate die type and face value
-        if (!isNumericDie && !['boost', 'proficiency', 'ability', 'setback', 'challenge', 'difficulty'].includes(type)) {
-          throw new Error(`Invalid die type: ${type}. Must be one of ${VALID_NUMERIC_DICE.join(', ')} or a valid narrative die type`);
+    setLoadingState('loading');
+    setError(null);
+    
+    try {
+      // Validate die type
+      const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
+      if (!isNumericDie && !['boost', 'proficiency', 'ability', 'setback', 'challenge', 'difficulty'].includes(type)) {
+        throw new Error(`Invalid die type: ${type}. Must be one of ${VALID_NUMERIC_DICE.join(', ')} or a valid narrative die type`);
+      }
+      
+      // Validate face value
+      if (isNumericDie) {
+        if (typeof face !== 'number') {
+          throw new Error(`Numeric dice require a number for the face value, got: ${face}`);
         }
-
-        if (isNumericDie) {
-          // Validate numeric face value
-          if (typeof face !== 'number') {
-            throw new Error(`Numeric dice require a number for the face value, got: ${face}`);
+        
+        const maxFace = getMaxFace(type as NumericDieType);
+        if (type === 'd100') {
+          if (face < 0 || face > maxFace || face % 10 !== 0) {
+            throw new Error(`Invalid face for d100: ${face}. Must be between 0 and 90 in steps of 10.`);
           }
-          const maxFace = getMaxFace(type as NumericDieType);
-          if (type === 'd100') {
-            if (face < 0 || face > maxFace || face % 10 !== 0) {
-              throw new Error(`Invalid face for d100: ${face}. Must be between 0 and 90 in steps of 10.`);
-            }
-          } else if (face < 1 || face > maxFace) {
-            throw new Error(`Invalid face for ${type}: ${face}. Must be between 1 and ${maxFace}.`);
-          }
-        } else {
-          // Validate narrative face value
-          if (typeof face !== 'string') {
-            throw new Error(`Narrative dice require a string for the face value, got: ${face}`);
-          }
+        } else if (face < 1 || face > maxFace) {
+          throw new Error(`Invalid face for ${type}: ${face}. Must be between 1 and ${maxFace}.`);
         }
-
-        // Use explicit import paths based on die type
-        let importPath;
-        let importPathString = '';
-        if (isNumericDie) {
-          const numericType = type as NumericDieType;
-          const { style: themeStyle, script: themeScript } = parseTheme(theme);
-          if (numericType === 'd4') {
-            const d4Config = getD4Config(variant);
-            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${d4Config}-${formatFaceNumber(face as number)}-${themeScript}-${themeStyle}.${format}`;
-          } else {
-            const dieType = getDieTypeName(numericType);
-            importPathString = `@swrpg-online/art/dice/numeric/${theme}/${dieType}-${formatFaceNumber(face as number)}-${themeScript}-${themeStyle}.${format}`;
-          }
-        } else {
-          const dieTypeName = getDieTypeName(type);
-          importPathString = `@swrpg-online/art/dice/narrative/${dieTypeName}/${dieTypeName}-${face}.${format}`;
-        }
-
-        // Log the path for debugging
-        console.log(`Attempting to load die: ${type}, face: ${face}, path: ${importPathString}`);
-
-        try {
-          // Add vite-ignore to prevent warnings and support multiple bundlers
-          importPath = () => import(/* @vite-ignore */ importPathString);
-          const module = await importPath();
-          
-          if (isMountedRef.current) {
-            if (!module.default) {
-              throw new Error(`Module loaded but no default export found for ${importPathString}`);
-            }
-            setDiceComponent(() => module.default);
-            setLoadingState('success');
-          }
-        } catch (importError) {
-          console.error(`Failed to load die asset: ${importPathString}`, importError);
-          
-          // Try alternative paths with different formats
-          const alternativePaths = [
-            // Try without the @swrpg-online prefix
-            importPathString.replace('@swrpg-online/art/', 'art/'),
-            // Try with /node_modules/ prefix
-            `/node_modules/${importPathString}`,
-            // Try with relative path
-            `./${importPathString}`,
-            // Try PNG if original was SVG
-            format === 'svg' ? importPathString.replace('.svg', '.png') : null,
-          ].filter(Boolean) as string[];
-          
-          // Try each alternative path
-          let loaded = false;
-          for (const altPath of alternativePaths) {
-            if (loaded) break;
-            try {
-              console.log(`Attempting alternative path: ${altPath}`);
-              const altModule = await import(/* @vite-ignore */ altPath);
-              
-              if (isMountedRef.current) {
-                if (!altModule.default) {
-                  console.warn(`Module loaded but no default export found for ${altPath}`);
-                  continue;
-                }
-                setDiceComponent(() => altModule.default);
-                setLoadingState('success');
-                loaded = true;
-                console.log(`Successfully loaded die using path: ${altPath}`);
-              }
-            } catch (altError) {
-              console.warn(`Failed to load alternative path: ${altPath}`, altError);
-            }
-          }
-          
-          if (!loaded) {
-            throw new Error(`Failed to load die asset: ${importPathString}. ${importError instanceof Error ? importError.message : 'Unknown import error'}`);
-          }
-        }
-      } catch (error) {
-        if (isMountedRef.current) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-          console.error(`Failed to load die ${format}:`, errorMessage);
-          setError(errorMessage);
-          setLoadingState('error');
-          setDiceComponent(null);
+      } else {
+        if (typeof face !== 'string') {
+          throw new Error(`Narrative dice require a string for the face value, got: ${face}`);
         }
       }
-    };
-
-    loadAsset();
+      
+      // All validation passed, construct the image path
+      const imagePath = constructImagePath(type, face, theme, format, variant);
+      console.log(`Attempting to load die: ${type}, face: ${face}, path: ${imagePath}`);
+      setImgSrc(imagePath);
+    } catch (validationError) {
+      const errorMessage = validationError instanceof Error ? validationError.message : 'Unknown error';
+      console.error(`Die validation error:`, errorMessage);
+      setError(errorMessage);
+      setLoadingState('error');
+    }
   }, [type, face, format, theme, variant]);
+  
+  // Handle successful image load
+  const handleImageLoad = () => {
+    setLoadingState('success');
+  };
+  
+  // Handle image load error
+  const handleImageError = () => {
+    // If SVG fails, try PNG
+    if (format === 'svg' && imgSrc) {
+      const pngPath = imgSrc.replace(`.${format}`, '.png');
+      console.log(`SVG failed to load, trying PNG: ${pngPath}`);
+      setImgSrc(pngPath);
+      return;
+    }
+    
+    // If already tried PNG or not SVG, mark as error
+    setError(`Failed to load die image for ${type}`);
+    setLoadingState('error');
+  };
+
+  // Render loading state
+  if (loadingState === 'loading' && !imgSrc) {
+    return (
+      <div 
+        className={`die-loading ${className || ''}`} 
+        style={{
+          width: '50px',
+          height: '50px',
+          backgroundColor: '#e9ecef',
+          border: '1px solid #dee2e6',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#495057',
+          ...style
+        }} 
+        role="status"
+      >
+        <span>...</span>
+      </div>
+    );
+  }
 
   // Render error state
   if (loadingState === 'error') {
@@ -304,34 +286,15 @@ export const Die: React.FC<DieProps> = ({
     );
   }
 
-  // Render loading state
-  if (loadingState === 'loading' || loadingState === 'idle') {
-    return (
-      <div 
-        className={`die-loading ${className || ''}`} 
-        style={{
-          width: '50px',
-          height: '50px',
-          backgroundColor: '#e9ecef',
-          border: '1px solid #dee2e6',
-          borderRadius: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#495057',
-          ...style
-        }} 
-        role="status"
-      >
-        <span>...</span>
-      </div>
-    );
-  }
-
-  // Render the SVG component
-  if (DiceComponent) {
-    return <DiceComponent className={className} style={style} />;
-  }
-
-  return null;
+  // Render the image
+  return (
+    <img
+      src={imgSrc || ''}
+      alt={`${type} die showing ${face}`}
+      className={className}
+      style={style}
+      onLoad={handleImageLoad}
+      onError={handleImageError}
+    />
+  );
 }; 
