@@ -114,21 +114,23 @@ const constructImagePath = (
   const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
   const { style: themeStyle, script: themeScript } = parseTheme(theme);
   
-  // Import from @swrpg-online/art package
-  const basePath = '@swrpg-online/art/dice';
-  
-  if (isNumericDie) {
-    const faceStr = formatFaceNumber(face as number);
-    if (type === 'd4') {
-      const d4Config = getD4Config(variant);
-      return `${basePath}/numeric/${theme}/${d4Config}-${faceStr}-${themeScript}-${themeStyle}.${format}`;
+  try {
+    if (isNumericDie) {
+      const faceStr = formatFaceNumber(face as number);
+      if (type === 'd4') {
+        const d4Config = getD4Config(variant);
+        return new URL(`dice/numeric/${theme}/${d4Config}-${faceStr}-${themeScript}-${themeStyle}.${format}`, 'https://raw.githubusercontent.com/swrpg-online/art/main/').href;
+      } else {
+        const dieType = getDieTypeName(type);
+        return new URL(`dice/numeric/${theme}/${dieType}-${faceStr}-${themeScript}-${themeStyle}.${format}`, 'https://raw.githubusercontent.com/swrpg-online/art/main/').href;
+      }
     } else {
-      const dieType = getDieTypeName(type);
-      return `${basePath}/numeric/${theme}/${dieType}-${faceStr}-${themeScript}-${themeStyle}.${format}`;
+      const dieTypeName = getDieTypeName(type);
+      return new URL(`dice/narrative/${dieTypeName}/${dieTypeName}-${face}.${format}`, 'https://raw.githubusercontent.com/swrpg-online/art/main/').href;
     }
-  } else {
-    const dieTypeName = getDieTypeName(type);
-    return `${basePath}/narrative/${dieTypeName}/${dieTypeName}-${face}.${format}`;
+  } catch (error) {
+    console.error('Error constructing image path:', error);
+    return '';
   }
 };
 

@@ -8,7 +8,7 @@ describe('Die Component', () => {
     const { getByAltText } = render(<Die type="d6" face={1} />);
     const img = getByAltText('d6 die showing 1');
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute('src')).toContain('D6-01-Arabic-White.svg');
+    expect(img.getAttribute('src')).toContain('raw.githubusercontent.com/swrpg-online/art/main/dice/numeric/white-arabic/D6-01-Arabic-White.svg');
   });
 
   it('applies custom styling correctly', () => {
@@ -28,13 +28,13 @@ describe('Die Component', () => {
   it('handles d4 variants correctly', () => {
     const { getByAltText } = render(<Die type="d4" face={1} variant="apex" />);
     const img = getByAltText('d4 die showing 1');
-    expect(img.getAttribute('src')).toContain('D4Apex-01-Arabic-White.svg');
+    expect(img.getAttribute('src')).toContain('raw.githubusercontent.com/swrpg-online/art/main/dice/numeric/white-arabic/D4Apex-01-Arabic-White.svg');
   });
 
   it('renders narrative dice correctly', () => {
     const { getByAltText } = render(<Die type="boost" face="Success" />);
     const img = getByAltText('boost die showing Success');
-    expect(img.getAttribute('src')).toContain('Boost-Success.svg');
+    expect(img.getAttribute('src')).toContain('raw.githubusercontent.com/swrpg-online/art/main/dice/narrative/Boost/Boost-Success.svg');
   });
 
   it('displays error state for invalid face values', () => {
