@@ -114,8 +114,8 @@ const constructImagePath = (
   const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
   const { style: themeStyle, script: themeScript } = parseTheme(theme);
   
-  // Import from @swrpg-online/art package
-  const basePath = '@swrpg-online/art/dice';
+  // Import from @swrpg-online/art package - Updated to use a root-relative path
+  const basePath = '/assets/@swrpg-online/art/dice';
   
   if (isNumericDie) {
     const faceStr = formatFaceNumber(face as number);

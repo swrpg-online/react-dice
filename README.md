@@ -55,6 +55,56 @@ import { Die } from '@swrpg-online/react-dice';
 | className | string | No | - | Additional CSS class names to apply to the die |
 | style | CSSProperties | No | - | Additional inline styles to apply to the die |
 
+## Asset Handling (Important!)
+
+This component library (`@swrpg-online/react-dice`) renders dice by generating image paths at runtime (e.g., `/assets/@swrpg-online/art/dice/numeric/white-arabic/D20-20-Arabic-White.svg`). It **does not** bundle the actual image assets from `@swrpg-online/art`.
+
+Therefore, **it is the responsibility of the consuming application** to ensure that the dice assets from the `@swrpg-online/art` package are copied into its build output or public directory, making them accessible via the expected URL path structure: `/assets/@swrpg-online/art/dice/...`.
+
+Most modern build tools (like Vite, Webpack, Parcel) require explicit configuration to copy static assets from `node_modules` into the final build.
+
+### Example: Vite Configuration
+
+If you are using Vite, you can use the `vite-plugin-static-copy` plugin:
+
+1.  **Install the plugin:**
+    ```bash
+    npm install -D vite-plugin-static-copy
+    # or
+    yarn add -D vite-plugin-static-copy
+    ```
+
+2.  **Configure `vite.config.js`:**
+    ```javascript
+    // vite.config.js
+    import { defineConfig } from 'vite';
+    import react from '@vitejs/plugin-react';
+    import { viteStaticCopy } from 'vite-plugin-static-copy';
+    import path from 'path';
+
+    export default defineConfig({
+      plugins: [
+        react(),
+        // Add other plugins like svgr if needed...
+        viteStaticCopy({
+          targets: [
+            {
+              // Copy the dice assets from the art package
+              src: path.resolve(__dirname, 'node_modules/@swrpg-online/art/dice'),
+              // Place them in the 'assets/@swrpg-online/art' directory within your build output (e.g., dist)
+              dest: 'assets/@swrpg-online/art' 
+            }
+          ]
+        })
+      ],
+      // ... other vite config
+    });
+    ```
+
+### Other Build Tools
+
+If you are using a different build tool (e.g., Webpack, Parcel, Create React App with customization), you will need to find the equivalent method for copying directory contents from `node_modules` into your public/static assets folder during the build process, ensuring the final path matches `/assets/@swrpg-online/art/dice/...`. Consult your build tool's documentation for handling static assets.
+
 ## Development
 
 1. Install dependencies:
