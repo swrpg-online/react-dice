@@ -1,0 +1,47 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Die Component Snapshot Tests matches snapshot for compound face 1`] = `
+<img
+  alt="ability die showing Success-Advantage"
+  src="/assets/@swrpg-online/art/dice/narrative/Ability/Ability-Success-Advantage.svg"
+/>
+`;
+
+exports[`Die Component Snapshot Tests matches snapshot for d4 apex variant 1`] = `
+<img
+  alt="d4 die showing 4"
+  src="/assets/@swrpg-online/art/dice/numeric/tfa-arabic/D4Apex-04-Arabic-Tfa.svg"
+/>
+`;
+
+exports[`Die Component Snapshot Tests matches snapshot for d100 1`] = `
+<img
+  alt="d100 die showing 90"
+  src="/assets/@swrpg-online/art/dice/numeric/rotj-aurebesh/D100-90-Aurebesh-Rotj.svg"
+/>
+`;
+
+exports[`Die Component Snapshot Tests matches snapshot for error state 1`] = `
+<div
+  class="die-error "
+  role="alert"
+  style="width: 50px; height: 50px; background-color: rgb(248, 215, 218); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: rgb(114, 28, 36); border: 1px solid #f5c6cb; font-size: 12px; padding: 4px; text-align: center;"
+  title="Invalid face for d6: Must be between 1 and 6"
+>
+  !
+</div>
+`;
+
+exports[`Die Component Snapshot Tests matches snapshot for narrative die 1`] = `
+<img
+  alt="proficiency die showing Triumph"
+  src="/assets/@swrpg-online/art/dice/narrative/Proficiency/Proficiency-Triumph.svg"
+/>
+`;
+
+exports[`Die Component Snapshot Tests matches snapshot for numeric die 1`] = `
+<img
+  alt="d20 die showing 20"
+  src="/assets/@swrpg-online/art/dice/numeric/black-aurebesh/D20-20-Aurebesh-Black.svg"
+/>
+`;
