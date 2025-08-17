@@ -42,6 +42,13 @@ export type DieTheme =
 
 export type D4Variant = 'standard' | 'apex' | 'base';
 
+/** Enum for loading states to avoid magic strings */
+export enum LoadingState {
+  Loading = 'loading',
+  Success = 'success',
+  Error = 'error'
+}
+
 /** Possible results on narrative dice */
 export type NarrativeResult =
   | 'Blank'
