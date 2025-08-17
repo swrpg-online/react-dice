@@ -2,6 +2,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Die } from './Die';
+import { DieProvider } from './DieContext';
 
 // Mock console.warn to test warnings
 let consoleWarnSpy: jest.SpyInstance;
@@ -283,6 +284,145 @@ describe('Die Component', () => {
         expect(getByAltText('d6 die showing 3')).toBeInTheDocument();
         expect(queryByRole('alert')).not.toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Configurable Asset Path', () => {
+    const originalEnv = process.env.REACT_APP_DICE_ASSET_PATH;
+
+    afterEach(() => {
+      if (originalEnv !== undefined) {
+        process.env.REACT_APP_DICE_ASSET_PATH = originalEnv;
+      } else {
+        delete process.env.REACT_APP_DICE_ASSET_PATH;
+      }
+    });
+
+    it('uses custom basePath prop when provided', () => {
+      const { getByAltText } = render(
+        <Die type="d20" face={20} basePath="https://cdn.example.com/dice" />
+      );
+      const img = getByAltText('d20 die showing 20');
+      expect(img.getAttribute('src')).toBe('https://cdn.example.com/dice/numeric/white-arabic/D20-20-Arabic-White.svg');
+    });
+
+    it('uses context basePath when no prop provided', () => {
+      const { getByAltText } = render(
+        <DieProvider config={{ basePath: '/custom/assets' }}>
+          <Die type="d6" face={3} />
+        </DieProvider>
+      );
+      const img = getByAltText('d6 die showing 3');
+      expect(img.getAttribute('src')).toBe('/custom/assets/numeric/white-arabic/D6-03-Arabic-White.svg');
+    });
+
+    it('uses environment variable when no prop or context', () => {
+      process.env.REACT_APP_DICE_ASSET_PATH = '/env/assets';
+      const { getByAltText } = render(<Die type="d8" face={5} />);
+      const img = getByAltText('d8 die showing 5');
+      expect(img.getAttribute('src')).toBe('/env/assets/numeric/white-arabic/D8-05-Arabic-White.svg');
+    });
+
+    it('uses default path when nothing else is configured', () => {
+      delete process.env.REACT_APP_DICE_ASSET_PATH;
+      const { getByAltText } = render(<Die type="d12" face={11} />);
+      const img = getByAltText('d12 die showing 11');
+      expect(img.getAttribute('src')).toBe('/assets/@swrpg-online/art/dice/numeric/white-arabic/D12-11-Arabic-White.svg');
+    });
+
+    it('prop overrides context configuration', () => {
+      const { getByAltText } = render(
+        <DieProvider config={{ basePath: '/context/path' }}>
+          <Die type="d4" face={2} basePath="/prop/path" />
+        </DieProvider>
+      );
+      const img = getByAltText('d4 die showing 2');
+      expect(img.getAttribute('src')).toBe('/prop/path/numeric/white-arabic/D4-02-Arabic-White.svg');
+    });
+
+    it('normalizes paths with trailing slashes', () => {
+      const { getByAltText } = render(
+        <Die type="boost" face="Success" basePath="/path/with/trailing/slash/" />
+      );
+      const img = getByAltText('boost die showing Success');
+      expect(img.getAttribute('src')).toBe('/path/with/trailing/slash/narrative/Boost/Boost-Success.svg');
+    });
+
+    it('handles relative paths correctly', () => {
+      const { getByAltText } = render(
+        <Die type="ability" face="Advantage" basePath="relative/path" />
+      );
+      const img = getByAltText('ability die showing Advantage');
+      expect(img.getAttribute('src')).toBe('/relative/path/narrative/Ability/Ability-Advantage.svg');
+    });
+
+    it('preserves CDN URLs correctly', () => {
+      const { getByAltText } = render(
+        <Die type="challenge" face="Threat" basePath="https://cdn.cloudflare.com/assets" />
+      );
+      const img = getByAltText('challenge die showing Threat');
+      expect(img.getAttribute('src')).toBe('https://cdn.cloudflare.com/assets/narrative/Challenge/Challenge-Threat.svg');
+    });
+
+    it('preserves protocol-relative URLs', () => {
+      const { getByAltText } = render(
+        <Die type="difficulty" face="Failure" basePath="//cdn.example.com/dice" />
+      );
+      const img = getByAltText('difficulty die showing Failure');
+      expect(img.getAttribute('src')).toBe('//cdn.example.com/dice/narrative/Difficulty/Difficulty-Failure.svg');
+    });
+
+    it('updates path when basePath prop changes', async () => {
+      const { rerender, getByAltText } = render(
+        <Die type="d20" face={1} basePath="/initial/path" />
+      );
+      
+      let img = getByAltText('d20 die showing 1');
+      expect(img.getAttribute('src')).toBe('/initial/path/numeric/white-arabic/D20-01-Arabic-White.svg');
+      
+      rerender(<Die type="d20" face={1} basePath="/updated/path" />);
+      
+      await waitFor(() => {
+        img = getByAltText('d20 die showing 1');
+        expect(img.getAttribute('src')).toBe('/updated/path/numeric/white-arabic/D20-01-Arabic-White.svg');
+      });
+    });
+
+    it('follows priority order: prop > context > env > default', () => {
+      process.env.REACT_APP_DICE_ASSET_PATH = '/env/path';
+
+      // Test with all configurations present
+      const { rerender, getByAltText } = render(
+        <DieProvider config={{ basePath: '/context/path' }}>
+          <Die type="d6" face={1} basePath="/prop/path" />
+        </DieProvider>
+      );
+      
+      let img = getByAltText('d6 die showing 1');
+      expect(img.getAttribute('src')).toBe('/prop/path/numeric/white-arabic/D6-01-Arabic-White.svg');
+
+      // Remove prop, should fall back to context
+      rerender(
+        <DieProvider config={{ basePath: '/context/path' }}>
+          <Die type="d6" face={1} />
+        </DieProvider>
+      );
+      
+      img = getByAltText('d6 die showing 1');
+      expect(img.getAttribute('src')).toBe('/context/path/numeric/white-arabic/D6-01-Arabic-White.svg');
+
+      // Remove context, should fall back to env
+      rerender(<Die type="d6" face={1} />);
+      
+      img = getByAltText('d6 die showing 1');
+      expect(img.getAttribute('src')).toBe('/env/path/numeric/white-arabic/D6-01-Arabic-White.svg');
+
+      // Remove env, should fall back to default
+      delete process.env.REACT_APP_DICE_ASSET_PATH;
+      rerender(<Die type="d6" face={1} />);
+      
+      img = getByAltText('d6 die showing 1');
+      expect(img.getAttribute('src')).toBe('/assets/@swrpg-online/art/dice/numeric/white-arabic/D6-01-Arabic-White.svg');
     });
   });
 }); 
