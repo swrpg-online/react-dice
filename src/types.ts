@@ -70,8 +70,12 @@ export interface DieProps {
   face?: number | NarrativeFace;
   /** The format of the die asset to display */
   format?: DieFormat;
-  /** The color theme and numeral system of the die */
-  theme?: DieTheme;
+  /** 
+   * The color theme and numeral system of the die.
+   * Format: 'style-script' (e.g., 'white-arabic', 'black-aurebesh')
+   * Defaults to 'white-arabic' if invalid or missing.
+   */
+  theme?: DieTheme | string;
   /** The variant of the d4 die (only applicable when type is 'd4') */
   variant?: D4Variant;
   /** Additional CSS class names to apply to the die */

@@ -70,9 +70,46 @@ const getD4Config = (variant: D4Variant): string => {
  * 
  * Note: The actual filenames use script-style order (e.g., 'Arabic-White') 
  * rather than style-script order, which is handled when constructing the import path.
+ * 
+ * @param theme - The theme string to parse (e.g., 'white-arabic')
+ * @returns Object with style and script properties, defaulting to 'White' and 'Arabic' if invalid
  */
-const parseTheme = (theme: string): { style: string; script: string } => {
-  const [style, script] = theme.split('-');
+const parseTheme = (theme: string | null | undefined): { style: string; script: string } => {
+  // Default fallback values
+  const defaults = { style: 'White', script: 'Arabic' };
+  
+  // Handle null, undefined, or empty string
+  if (!theme || typeof theme !== 'string' || theme.trim() === '') {
+    console.warn(`Invalid theme provided: ${theme}. Using defaults.`);
+    return defaults;
+  }
+  
+  const trimmedTheme = theme.trim().toLowerCase();
+  const parts = trimmedTheme.split('-').map(part => part.trim());
+  
+  // Handle single word or no hyphen
+  if (parts.length === 1) {
+    // If only one part, use it as style and default script
+    const style = parts[0];
+    if (style) {
+      console.warn(`Theme missing script part: "${theme}". Using default script.`);
+      return {
+        style: style.charAt(0).toUpperCase() + style.slice(1),
+        script: defaults.script
+      };
+    }
+    return defaults;
+  }
+  
+  // Handle normal case with hyphen
+  const [style, script] = parts;
+  
+  // Validate both parts exist and are non-empty
+  if (!style || !script) {
+    console.warn(`Malformed theme string: "${theme}". Using defaults.`);
+    return defaults;
+  }
+  
   return {
     style: style.charAt(0).toUpperCase() + style.slice(1),
     script: script.charAt(0).toUpperCase() + script.slice(1)
