@@ -107,6 +107,66 @@ If you are using a different build tool (e.g., Webpack, Parcel, Create React App
 
 ## Development
 
+### Loading State Management
+
+This library uses a type-safe loading state management pattern with the `LoadingState` enum and a custom `useLoadingState` hook to avoid magic strings and improve maintainability.
+
+#### LoadingState Enum
+
+Instead of using string literals like `'loading'`, `'success'`, and `'error'`, the library uses the `LoadingState` enum:
+
+```typescript
+import { LoadingState } from '@swrpg-online/react-dice';
+
+// Available states
+LoadingState.Loading  // 'loading'
+LoadingState.Success  // 'success'
+LoadingState.Error    // 'error'
+```
+
+#### useLoadingState Hook
+
+For components that need loading state management, use the custom hook:
+
+```typescript
+import { useLoadingState } from '@swrpg-online/react-dice/hooks';
+
+const MyComponent = () => {
+  const { 
+    state,        // Current LoadingState
+    setLoading,   // Set to Loading state
+    setSuccess,   // Set to Success state
+    setError,     // Set to Error state
+    isLoading,    // Boolean helper
+    isSuccess,    // Boolean helper
+    isError       // Boolean helper
+  } = useLoadingState();
+
+  // Example usage
+  const fetchData = async () => {
+    setLoading();
+    try {
+      const data = await api.getData();
+      setSuccess();
+    } catch (err) {
+      setError();
+    }
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error occurred</div>;
+  // ...
+};
+```
+
+This pattern ensures:
+- Type safety - TypeScript will catch typos and invalid states
+- Consistency - All loading states follow the same pattern
+- Maintainability - Easy to refactor or extend states
+- Testing - State transitions are easily testable
+
+### Running the Project
+
 1. Install dependencies:
 ```bash
 npm install

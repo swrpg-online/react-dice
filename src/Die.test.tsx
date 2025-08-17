@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Die } from './Die';
 
@@ -173,6 +173,116 @@ describe('Die Component', () => {
       unmount3();
 
       expect(consoleWarnSpy).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Loading State Transitions', () => {
+    it('shows loading state initially when image has not loaded', () => {
+      // Note: In the test environment, images may load instantly or not render loading state
+      // This test validates the loading state logic when imgSrc is not yet set
+      const { container } = render(<Die type="d6" face={1} />);
+      // The component should render either loading state or the image
+      const img = container.querySelector('img');
+      const loadingDiv = container.querySelector('.die-loading');
+      
+      // Either the image is present (loaded quickly) or loading state is shown
+      expect(img || loadingDiv).toBeTruthy();
+    });
+
+    it('transitions to success state on valid die', async () => {
+      const { getByAltText, queryByRole } = render(<Die type="d6" face={3} />);
+      
+      // Wait for image to load
+      await waitFor(() => {
+        const img = getByAltText('d6 die showing 3');
+        expect(img).toBeInTheDocument();
+      });
+
+      // Loading state should be gone
+      const loadingDiv = queryByRole('status');
+      expect(loadingDiv).not.toBeInTheDocument();
+    });
+
+    it('transitions to error state on invalid die type', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { getByRole } = render(<Die type={"invalid" as any} face={1} />);
+      
+      // Should show error state
+      const errorDiv = getByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      expect(errorDiv.getAttribute('title')).toContain('Invalid die type');
+    });
+
+    it('transitions to error state on invalid numeric face', () => {
+      const { getByRole } = render(<Die type="d6" face={10} />);
+      
+      // Should show error state
+      const errorDiv = getByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      expect(errorDiv.getAttribute('title')).toContain('Invalid face for d6');
+    });
+
+    it('transitions to error state when numeric die gets string face', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { getByRole } = render(<Die type="d20" face={"Success" as any} />);
+      
+      // Should show error state
+      const errorDiv = getByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      expect(errorDiv.getAttribute('title')).toContain('Numeric dice require a number');
+    });
+
+    it('transitions to error state when narrative die gets number face', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { getByRole } = render(<Die type="boost" face={5 as any} />);
+      
+      // Should show error state
+      const errorDiv = getByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      expect(errorDiv.getAttribute('title')).toContain('Narrative dice require a string');
+    });
+
+    it('handles d100 validation correctly', () => {
+      // Valid d100 values
+      const { rerender, queryByRole } = render(<Die type="d100" face={0} />);
+      expect(queryByRole('alert')).not.toBeInTheDocument();
+      
+      rerender(<Die type="d100" face={50} />);
+      expect(queryByRole('alert')).not.toBeInTheDocument();
+      
+      rerender(<Die type="d100" face={90} />);
+      expect(queryByRole('alert')).not.toBeInTheDocument();
+      
+      // Invalid d100 values
+      rerender(<Die type="d100" face={45} />);
+      const errorDiv = queryByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      expect(errorDiv?.getAttribute('title')).toContain('Invalid face for d100');
+    });
+
+    it('resets state when props change', async () => {
+      const { rerender, getByAltText, queryByRole } = render(<Die type="d6" face={1} />);
+      
+      // Wait for initial load
+      await waitFor(() => {
+        expect(getByAltText('d6 die showing 1')).toBeInTheDocument();
+      });
+      
+      // Change to invalid props
+      rerender(<Die type="d6" face={10} />);
+      
+      // Should show error state
+      const errorDiv = queryByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      
+      // Change back to valid props
+      rerender(<Die type="d6" face={3} />);
+      
+      // Should be back to success state
+      await waitFor(() => {
+        expect(getByAltText('d6 die showing 3')).toBeInTheDocument();
+        expect(queryByRole('alert')).not.toBeInTheDocument();
+      });
     });
   });
 }); 

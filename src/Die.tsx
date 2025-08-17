@@ -4,7 +4,8 @@
  */
 
 import * as React from 'react';
-import { DieProps, D4Variant } from './types';
+import { DieProps, D4Variant, LoadingState } from './types';
+import { useLoadingState } from './hooks/useLoadingState';
 
 /** Default theme for dice rendering */
 const DEFAULT_THEME = 'white-arabic';
@@ -203,13 +204,13 @@ export const Die: React.FC<DieProps> = ({
   style,
 }) => {
   // State to track loading and error states
-  const [loadingState, setLoadingState] = React.useState<'loading' | 'success' | 'error'>('loading');
+  const { state: loadingState, setLoading, setSuccess, setError: setErrorState } = useLoadingState();
   const [error, setError] = React.useState<string | null>(null);
   const [imgSrc, setImgSrc] = React.useState<string | null>(null);
   
   // On mount and when props change, validate and set the image path
   React.useEffect(() => {
-    setLoadingState('loading');
+    setLoading();
     setError(null);
     
     try {
@@ -245,13 +246,13 @@ export const Die: React.FC<DieProps> = ({
     } catch (validationError) {
       const errorMessage = validationError instanceof Error ? validationError.message : 'Unknown error';
       setError(errorMessage);
-      setLoadingState('error');
+      setErrorState();
     }
-  }, [type, face, format, theme, variant]);
+  }, [type, face, format, theme, variant, setLoading, setErrorState]);
   
   // Handle successful image load
   const handleImageLoad = () => {
-    setLoadingState('success');
+    setSuccess();
   };
   
   // Handle image load error
@@ -264,11 +265,11 @@ export const Die: React.FC<DieProps> = ({
     }
     
     setError(`Failed to load die image`);
-    setLoadingState('error');
+    setErrorState();
   };
 
   // Render loading state
-  if (loadingState === 'loading' && !imgSrc) {
+  if (loadingState === LoadingState.Loading && !imgSrc) {
     return (
       <div 
         className={`die-loading ${className || ''}`} 
@@ -292,7 +293,7 @@ export const Die: React.FC<DieProps> = ({
   }
 
   // Render error state
-  if (loadingState === 'error') {
+  if (loadingState === LoadingState.Error) {
     return (
       <div 
         className={`die-error ${className || ''}`} 
