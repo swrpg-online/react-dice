@@ -6,6 +6,7 @@
 import * as React from 'react';
 import { DieProps, D4Variant, LoadingState } from './types';
 import { useLoadingState } from './hooks/useLoadingState';
+import { useEffectiveBasePath } from './DieContext';
 
 /** Default theme for dice rendering */
 const DEFAULT_THEME = 'white-arabic';
@@ -147,13 +148,13 @@ const constructImagePath = (
   face: number | string,
   theme: string,
   format: string,
-  variant: D4Variant
+  variant: D4Variant,
+  basePath: string
 ): string => {
   const isNumericDie = VALID_NUMERIC_DICE.includes(type as NumericDieType);
   const { style: themeStyle, script: themeScript } = parseTheme(theme);
   
-  // Import from @swrpg-online/art package - Updated to use a root-relative path
-  const basePath = '/assets/@swrpg-online/art/dice';
+  // Use the provided base path for assets
   
   if (isNumericDie) {
     const faceStr = formatFaceNumber(face as number);
@@ -200,9 +201,13 @@ export const Die: React.FC<DieProps> = ({
   format = DEFAULT_FORMAT,
   theme = DEFAULT_THEME,
   variant = DEFAULT_D4_VARIANT,
+  basePath: propBasePath,
   className,
   style,
 }) => {
+  // Get the effective base path using the fallback chain
+  const basePath = useEffectiveBasePath(propBasePath);
+  
   // State to track loading and error states
   const { state: loadingState, setLoading, setSuccess, setError: setErrorState } = useLoadingState();
   const [error, setError] = React.useState<string | null>(null);
@@ -241,14 +246,14 @@ export const Die: React.FC<DieProps> = ({
       }
       
       // All validation passed, construct the image path
-      const imagePath = constructImagePath(type, face, theme, format, variant);
+      const imagePath = constructImagePath(type, face, theme, format, variant, basePath);
       setImgSrc(imagePath);
     } catch (validationError) {
       const errorMessage = validationError instanceof Error ? validationError.message : 'Unknown error';
       setError(errorMessage);
       setErrorState();
     }
-  }, [type, face, format, theme, variant, setLoading, setErrorState]);
+  }, [type, face, format, theme, variant, basePath, setLoading, setErrorState]);
   
   // Handle successful image load
   const handleImageLoad = () => {

@@ -1,4 +1,14 @@
 export { Die } from './Die';
+export {
+  DieProvider,
+  useDieConfig,
+  useEffectiveBasePath,
+  normalizeBasePath,
+  preloadImage,
+  usePreloadAssets,
+  type DieConfig,
+  type DieProviderProps,
+} from './DieContext';
 export type {
   DieProps,
   DieType,

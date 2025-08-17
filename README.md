@@ -52,14 +52,139 @@ import { Die } from '@swrpg-online/react-dice';
 | format | 'svg' \| 'png' | No | 'svg' | The format of the die asset to display |
 | theme | string | No | 'white-arabic' | The theme and numeral system of the die. Format is '{color}-{numerals}' or '{movie}-{numerals}' where numerals is either 'arabic' or 'aurebesh'. Movies: anh (A New Hope), rotj (Return of the Jedi), etc. |
 | variant | 'standard' \| 'apex' \| 'base' | No | 'standard' | The variant of the d4 die (only applicable when type is 'd4') |
+| basePath | string | No | '/assets/@swrpg-online/art/dice' | The base path for dice assets. Allows for custom deployment locations (e.g., CDN) |
 | className | string | No | - | Additional CSS class names to apply to the die |
 | style | CSSProperties | No | - | Additional inline styles to apply to the die |
 
+## Configurable Asset Path
+
+The library now supports configurable asset paths, allowing you to deploy dice assets to CDNs or different paths without modifying the library. There are multiple ways to configure the asset path, with the following priority order:
+
+1. **Component Prop** (highest priority)
+2. **Context Provider**
+3. **Environment Variable**
+4. **Default Path** (lowest priority)
+
+### Method 1: Component Prop
+
+The simplest way to configure the asset path for individual dice:
+
+```jsx
+import { Die } from '@swrpg-online/react-dice';
+
+// Use a CDN
+<Die 
+  type="d20" 
+  face={20}
+  basePath="https://cdn.example.com/dice"
+/>
+
+// Use a different local path
+<Die 
+  type="boost" 
+  face="Success"
+  basePath="/custom/assets/dice"
+/>
+```
+
+### Method 2: Context Provider
+
+For global configuration across your entire application:
+
+```jsx
+import { DieProvider, Die } from '@swrpg-online/react-dice';
+
+function App() {
+  return (
+    <DieProvider config={{ 
+      basePath: 'https://cdn.example.com/dice',
+      preloadAssets: true,  // Optional: enable preloading
+      cacheDuration: 3600000  // Optional: cache for 1 hour
+    }}>
+      {/* All Die components will use the CDN path */}
+      <Die type="d20" face={20} />
+      <Die type="boost" face="Success" />
+    </DieProvider>
+  );
+}
+```
+
+### Method 3: Environment Variable
+
+Set the `REACT_APP_DICE_ASSET_PATH` environment variable:
+
+```bash
+# .env file
+REACT_APP_DICE_ASSET_PATH=https://cdn.example.com/dice
+```
+
+Or when running your build:
+
+```bash
+REACT_APP_DICE_ASSET_PATH=https://cdn.example.com/dice npm run build
+```
+
+### Method 4: Programmatic Configuration
+
+You can also update the configuration programmatically:
+
+```jsx
+import { DieProvider, useDieConfig } from '@swrpg-online/react-dice';
+
+function ConfigurableComponent() {
+  const { updateConfig } = useDieConfig();
+  
+  const switchToCDN = () => {
+    updateConfig({ basePath: 'https://cdn.example.com/dice' });
+  };
+  
+  return (
+    <button onClick={switchToCDN}>Use CDN</button>
+  );
+}
+```
+
+### Asset Preloading
+
+The library supports asset preloading for better performance:
+
+```jsx
+import { DieProvider, usePreloadAssets } from '@swrpg-online/react-dice';
+
+function GameComponent() {
+  // Preload specific dice assets
+  usePreloadAssets([
+    '/assets/@swrpg-online/art/dice/numeric/white-arabic/D20-20-Arabic-White.svg',
+    '/assets/@swrpg-online/art/dice/narrative/Boost/Boost-Success.svg'
+  ]);
+  
+  return (
+    <div>
+      <Die type="d20" face={20} />
+      <Die type="boost" face="Success" />
+    </div>
+  );
+}
+
+// Or enable global preloading
+<DieProvider config={{ preloadAssets: true }}>
+  <App />
+</DieProvider>
+```
+
+### Path Normalization
+
+The library automatically handles path normalization:
+- Removes trailing slashes
+- Handles both relative and absolute paths
+- Supports full URLs (http://, https://, //)
+- Ensures proper formatting for all path types
+
 ## Asset Handling (Important!)
 
-This component library (`@swrpg-online/react-dice`) renders dice by generating image paths at runtime (e.g., `/assets/@swrpg-online/art/dice/numeric/white-arabic/D20-20-Arabic-White.svg`). It **does not** bundle the actual image assets from `@swrpg-online/art`.
+This component library (`@swrpg-online/react-dice`) renders dice by generating image paths at runtime. It **does not** bundle the actual image assets from `@swrpg-online/art`.
 
-Therefore, **it is the responsibility of the consuming application** to ensure that the dice assets from the `@swrpg-online/art` package are copied into its build output or public directory, making them accessible via the expected URL path structure: `/assets/@swrpg-online/art/dice/...`.
+Therefore, **it is the responsibility of the consuming application** to ensure that the dice assets from the `@swrpg-online/art` package are copied into its build output or public directory, making them accessible via the configured path.
 
 Most modern build tools (like Vite, Webpack, Parcel) require explicit configuration to copy static assets from `node_modules` into the final build.
 

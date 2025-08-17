@@ -85,6 +85,11 @@ export interface DieProps {
   theme?: DieTheme | string;
   /** The variant of the d4 die (only applicable when type is 'd4') */
   variant?: D4Variant;
+  /** 
+   * The base path for dice assets. This allows for custom deployment locations.
+   * Defaults to '/assets/@swrpg-online/art/dice' if not specified.
+   */
+  basePath?: string;
   /** Additional CSS class names to apply to the die */
   className?: string;
   /** Additional inline styles to apply to the die */
