@@ -49,6 +49,7 @@ import { Die } from '@swrpg-online/react-dice';
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | type | string | Yes | - | The type of die to display. Can be one of: 'boost', 'proficiency', 'ability', 'setback', 'challenge', 'difficulty', 'd4', 'd6', 'd8', 'd12', 'd20', 'd100' |
+| face | number \| string | Yes | - | The face to display. For numeric dice: a number (1-based, for d100 use 0-90 in steps of 10). For narrative dice: a result string (e.g., 'Success', 'Advantage-Advantage') |
 | format | 'svg' \| 'png' | No | 'svg' | The format of the die asset to display |
 | theme | string | No | 'white-arabic' | The theme and numeral system of the die. Format is '{color}-{numerals}' or '{movie}-{numerals}' where numerals is either 'arabic' or 'aurebesh'. Movies: anh (A New Hope), rotj (Return of the Jedi), etc. |
 | variant | 'standard' \| 'apex' \| 'base' | No | 'standard' | The variant of the d4 die (only applicable when type is 'd4') |
@@ -254,7 +255,7 @@ LoadingState.Error    // 'error'
 For components that need loading state management, use the custom hook:
 
 ```typescript
-import { useLoadingState } from '@swrpg-online/react-dice/hooks';
+import { useLoadingState } from '@swrpg-online/react-dice';
 
 const MyComponent = () => {
   const { 
