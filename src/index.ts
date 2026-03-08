@@ -9,6 +9,8 @@ export {
   type DieConfig,
   type DieProviderProps,
 } from './DieContext';
+export { LoadingState } from './types';
+export { useLoadingState } from './hooks/useLoadingState';
 export type {
   DieProps,
   DieType,

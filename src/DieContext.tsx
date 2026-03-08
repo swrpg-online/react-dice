@@ -146,18 +146,22 @@ export const preloadImage = (src: string): Promise<void> => {
 export const usePreloadAssets = (paths: string[]): void => {
   const context = useDieConfig();
   const pathsKey = paths.join(',');
+  const addPreloadedAsset = context?.addPreloadedAsset;
+  const preloadEnabled = context?.config.preloadAssets;
+  const preloadedAssetsRef = React.useRef(context?.preloadedAssets);
+  preloadedAssetsRef.current = context?.preloadedAssets;
 
   React.useEffect(() => {
-    if (!context?.config.preloadAssets || paths.length === 0) {
+    if (!preloadEnabled || paths.length === 0 || !addPreloadedAsset) {
       return;
     }
 
     const preloadAll = async () => {
       const promises = paths.map(async (path) => {
-        if (!context.preloadedAssets.has(path)) {
+        if (!preloadedAssetsRef.current?.has(path)) {
           try {
             await preloadImage(path);
-            context.addPreloadedAsset(path);
+            addPreloadedAsset(path);
           } catch (error) {
             console.warn(`Failed to preload asset: ${path}`, error);
           }
@@ -168,5 +172,5 @@ export const usePreloadAssets = (paths: string[]): void => {
     };
 
     preloadAll();
-  }, [pathsKey, context?.config.preloadAssets]); // Only depend on pathsKey and preloadAssets config
+  }, [pathsKey, preloadEnabled, addPreloadedAsset]);
 };
