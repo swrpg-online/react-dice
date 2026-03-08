@@ -14,32 +14,32 @@ npm install @swrpg-online/react-dice
 import { Die } from '@swrpg-online/react-dice';
 
 // Using SVG dice with Arabic numerals
-<Die type="boost" format="svg" theme="white-arabic" />
-<Die type="proficiency" format="svg" theme="black-arabic" />
+<Die type="boost" face="Success" format="svg" theme="white-arabic" />
+<Die type="proficiency" face="Triumph" format="svg" theme="black-arabic" />
 
 // Using SVG dice with Aurebesh numerals
-<Die type="boost" format="svg" theme="white-aurebesh" />
-<Die type="proficiency" format="svg" theme="black-aurebesh" />
+<Die type="boost" face="Advantage" format="svg" theme="white-aurebesh" />
+<Die type="proficiency" face="Success-Success" format="svg" theme="black-aurebesh" />
 
 // Using movie themes with Arabic numerals
-<Die type="ability" format="png" theme="anh-arabic" />
-<Die type="challenge" format="png" theme="tfa-arabic" />
+<Die type="ability" face="Success" format="png" theme="anh-arabic" />
+<Die type="challenge" face="Failure" format="png" theme="tfa-arabic" />
 
 // Using movie themes with Aurebesh numerals
-<Die type="ability" format="png" theme="anh-aurebesh" />
-<Die type="challenge" format="png" theme="tfa-aurebesh" />
+<Die type="ability" face="Advantage" format="png" theme="anh-aurebesh" />
+<Die type="challenge" face="Threat" format="png" theme="tfa-aurebesh" />
 
 // Using numeric dice with different variants
-<Die type="d4" format="svg" theme="white-arabic" variant="standard" />
-<Die type="d4" format="svg" theme="black-aurebesh" variant="apex" />
-<Die type="d4" format="svg" theme="rots-arabic" variant="base" />
+<Die type="d4" face={1} format="svg" theme="white-arabic" variant="standard" />
+<Die type="d4" face={2} format="svg" theme="black-aurebesh" variant="apex" />
+<Die type="d4" face={3} format="svg" theme="rots-arabic" variant="base" />
 
 // Other numeric dice examples
-<Die type="d6" format="png" theme="tesb-arabic" />
-<Die type="d8" format="svg" theme="rotj-aurebesh" />
-<Die type="d12" format="png" theme="tpm-arabic" />
-<Die type="d20" format="svg" theme="tlj-aurebesh" />
-<Die type="d100" format="png" theme="tros-arabic" />
+<Die type="d6" face={3} format="png" theme="tesb-arabic" />
+<Die type="d8" face={7} format="svg" theme="rotj-aurebesh" />
+<Die type="d12" face={11} format="png" theme="tpm-arabic" />
+<Die type="d20" face={20} format="svg" theme="tlj-aurebesh" />
+<Die type="d100" face={90} format="png" theme="tros-arabic" />
 ```
 
 ## Props
@@ -49,6 +49,7 @@ import { Die } from '@swrpg-online/react-dice';
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | type | string | Yes | - | The type of die to display. Can be one of: 'boost', 'proficiency', 'ability', 'setback', 'challenge', 'difficulty', 'd4', 'd6', 'd8', 'd12', 'd20', 'd100' |
+| face | number \| string | Yes | - | The face to display. For numeric dice: a number (1-based, for d100 use 0-90 in steps of 10). For narrative dice: a result string (e.g., 'Success', 'Advantage-Advantage') |
 | format | 'svg' \| 'png' | No | 'svg' | The format of the die asset to display |
 | theme | string | No | 'white-arabic' | The theme and numeral system of the die. Format is '{color}-{numerals}' or '{movie}-{numerals}' where numerals is either 'arabic' or 'aurebesh'. Movies: anh (A New Hope), rotj (Return of the Jedi), etc. |
 | variant | 'standard' \| 'apex' \| 'base' | No | 'standard' | The variant of the d4 die (only applicable when type is 'd4') |
@@ -254,7 +255,7 @@ LoadingState.Error    // 'error'
 For components that need loading state management, use the custom hook:
 
 ```typescript
-import { useLoadingState } from '@swrpg-online/react-dice/hooks';
+import { useLoadingState } from '@swrpg-online/react-dice';
 
 const MyComponent = () => {
   const { 

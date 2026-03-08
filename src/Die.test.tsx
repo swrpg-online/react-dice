@@ -321,6 +321,27 @@ describe('Die Component', () => {
       });
     });
 
+    it('shows error state when both SVG and PNG fallback fail', async () => {
+      const { getByAltText, queryByRole } = render(<Die type="d6" face={1} format="svg" />);
+      const img = getByAltText('d6 die showing 1');
+
+      // Initially should load SVG
+      expect(img.getAttribute('src')).toContain('.svg');
+
+      // First error: SVG fails, should fall back to PNG
+      fireEvent.error(img);
+      await waitFor(() => {
+        expect(img.getAttribute('src')).toContain('.png');
+      });
+
+      // Second error: PNG also fails, should show error state
+      fireEvent.error(img);
+      await waitFor(() => {
+        const errorDiv = queryByRole('alert');
+        expect(errorDiv).toBeInTheDocument();
+      });
+    });
+
     it('handles PNG format directly without fallback', async () => {
       const { getByAltText, queryByRole } = render(<Die type="d6" face={1} format="png" />);
       const img = getByAltText('d6 die showing 1');
@@ -515,6 +536,26 @@ describe('Die Component', () => {
   });
 
   describe('Error Messages and Accessibility', () => {
+    it('shows error when face prop is omitted for numeric die', () => {
+      const { getByRole } = render(<Die type="d6" />);
+      const errorDiv = getByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      expect(errorDiv.getAttribute('title')).toContain('face" prop is required');
+    });
+
+    it('shows error when face prop is omitted for narrative die', () => {
+      const { getByRole } = render(<Die type="boost" />);
+      const errorDiv = getByRole('alert');
+      expect(errorDiv).toBeInTheDocument();
+      expect(errorDiv.getAttribute('title')).toContain('face" prop is required');
+    });
+
+    it('error state has aria-label for screen readers', () => {
+      const { getByRole } = render(<Die type="d6" face={10} />);
+      const errorDiv = getByRole('alert');
+      expect(errorDiv).toHaveAttribute('aria-label', 'Invalid face for d6: Must be between 1 and 6');
+    });
+
     it('provides descriptive error message for invalid die type', () => {
       const { getByRole } = render(<Die type={'invalid' as any} face={1} />);
       const errorDiv = getByRole('alert');

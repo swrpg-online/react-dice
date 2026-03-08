@@ -197,7 +197,7 @@ const constructImagePath = (
  */
 export const Die: React.FC<DieProps> = ({
   type,
-  face = 1,
+  face,
   format = DEFAULT_FORMAT,
   theme = DEFAULT_THEME,
   variant = DEFAULT_D4_VARIANT,
@@ -212,11 +212,13 @@ export const Die: React.FC<DieProps> = ({
   const { state: loadingState, setLoading, setSuccess, setError: setErrorState } = useLoadingState();
   const [error, setError] = React.useState<string | null>(null);
   const [imgSrc, setImgSrc] = React.useState<string | null>(null);
+  const hasFallenBack = React.useRef(false);
   
   // On mount and when props change, validate and set the image path
   React.useEffect(() => {
     setLoading();
     setError(null);
+    hasFallenBack.current = false;
     
     try {
       // Validate die type
@@ -224,7 +226,12 @@ export const Die: React.FC<DieProps> = ({
       if (!isNumericDie && !['boost', 'proficiency', 'ability', 'setback', 'challenge', 'difficulty'].includes(type)) {
         throw new Error(`Invalid die type: ${type}`);
       }
-      
+
+      // Validate face is provided
+      if (face === undefined || face === null) {
+        throw new Error(`The "face" prop is required. Specify a valid face value for ${type} dice.`);
+      }
+
       // Validate face value
       if (isNumericDie) {
         if (typeof face !== 'number') {
@@ -262,13 +269,14 @@ export const Die: React.FC<DieProps> = ({
   
   // Handle image load error
   const handleImageError = () => {
-    // If SVG fails, try PNG
-    if (format === 'svg' && imgSrc) {
+    // If SVG fails, try PNG fallback (only once)
+    if (format === 'svg' && imgSrc && !hasFallenBack.current) {
+      hasFallenBack.current = true;
       const pngPath = imgSrc.replace(`.${format}`, '.png');
       setImgSrc(pngPath);
       return;
     }
-    
+
     setError(`Failed to load die image`);
     setErrorState();
   };
@@ -319,6 +327,7 @@ export const Die: React.FC<DieProps> = ({
         }} 
         role="alert"
         title={error || 'Error loading die'}
+        aria-label={error || 'Error loading die'}
       >
         !
       </div>
